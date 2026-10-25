@@ -48,7 +48,7 @@ extend_listview_event("Purchase Invoice", "onload", function (listview) {
                     invoices: invoice_names
                 },
                 freeze: true,
-                freeze_message: __("Submitting Invoices to FTA..."),
+                freeze_message: __("Queuing invoices for UAE e-invoicing..."),
 
                 callback: function (r) {
 
@@ -59,13 +59,13 @@ extend_listview_event("Purchase Invoice", "onload", function (listview) {
 
                     let msg = "";
 
-                    // if (r.message.success && r.message.success.length) {
-                    //     msg += "<b>Submitted Successfully:</b><br>" +
-                    //         r.message.success.join("<br>") + "<br><br>";
-                    // }
+                    if (r.message.success && r.message.success.length) {
+                        msg += "<b>Queued for submission:</b><br>" +
+                            r.message.success.join("<br>") + "<br><br>";
+                    }
 
                     if (r.message.skipped && r.message.skipped.length) {
-                        msg += "<b>Skipped (Already Submitted):</b><br>" +
+                        msg += "<b>Skipped:</b><br>" +
                             r.message.skipped.join("<br>") + "<br><br>";
                     }
 

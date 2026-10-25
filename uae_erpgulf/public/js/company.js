@@ -151,9 +151,7 @@ frappe.ui.form.on("Company", {
             freeze_message: "Fetching Access Token...",
 
             callback: function (r) {
-                console.log("Access Token Response:", r);
-
-                if (r.message) {
+                if (r.message && r.message.status === "success") {
                     frappe.msgprint({
                         title: __("Success"),
                         message: __("✔ Access Token Generated & Saved Successfully"),
@@ -386,6 +384,173 @@ frappe.ui.form.on('Company', {
                 frappe.msgprint(_("❌ Error while fetching webhook logs"));
             }
         });
-    }
+    },
 
+    refresh: function (frm) {
+        if (!frm.doc.__islocal) {
+            frm.add_custom_button(
+                __("Run E-Invoice Readiness Audit"),
+                function () {
+                    frappe.call({
+                        method: "uae_erpgulf.core.readiness.check_company_readiness",
+                        args: { company: frm.doc.name },
+                        freeze: true,
+                        freeze_message: __("Auditing E-Invoicing & Accounting Readiness..."),
+                        callback: function (r) {
+                            if (r.message) {
+                                show_readiness_modal(r.message);
+                            }
+                        }
+                    });
+                },
+                __("UAE E-Invoice")
+            );
+
+            frm.add_custom_button(
+                __("Seed Demo Master Data"),
+                function () {
+                    frappe.confirm(
+                        __("This will create a sample UAE Supplier (Al Najm Supplies), Items, and an approved Purchase Order (PO-2026-DEMO-01) for testing. Proceed?"),
+                        function () {
+                            frappe.call({
+                                method: "uae_erpgulf.core.simulator.seed_demo_data",
+                                args: { company: frm.doc.name },
+                                freeze: true,
+                                freeze_message: __("Seeding Demo UAE E-Invoicing Data..."),
+                                callback: function (r) {
+                                    if (r.message && r.message.status === "success") {
+                                        const details = r.message.details || {};
+                                        const created = (details.created || []).map(x => `<li>✔ ${x}</li>`).join("");
+                                        const existing = (details.existing || []).map(x => `<li>ℹ ${x} (already present)</li>`).join("");
+                                        frappe.msgprint({
+                                            title: __("Demo Data Seeded Successfully"),
+                                            message: `<div style="font-size:13px;"><ul style="padding-left:16px;">${created}${existing}</ul></div>`,
+                                            indicator: "green"
+                                        });
+                                        frm.reload_doc();
+                                    }
+                                }
+                            });
+                        }
+                    );
+                },
+                __("UAE E-Invoice")
+            );
+
+            frm.add_custom_button(
+                __("Simulate Inbound Invoice"),
+                function () {
+                    const d = new frappe.ui.Dialog({
+                        title: __("Simulate Inbound UAE E-Invoice"),
+                        fields: [
+                            {
+                                label: __("Simulation Scenario"),
+                                fieldname: "scenario",
+                                fieldtype: "Select",
+                                reqd: 1,
+                                default: "standard_po",
+                                options: [
+                                    { value: "standard_po", label: "1. Standard PO 3-Way Match (PEPPOL UBL XML)" },
+                                    { value: "service_expense", label: "2. Service / Courier Fee (No PO, Expense Route)" },
+                                    { value: "flick_json", label: "3. Flick JSON Format (Partial PO Billing)" },
+                                    { value: "credit_note", label: "4. Inbound Credit Note (Return / Adjustment)" },
+                                    { value: "duplicate_guard", label: "5. Duplicate Guard Verification (Blocks Re-submission)" }
+                                ]
+                            }
+                        ],
+                        primary_action_label: __("Execute Inbound Simulation"),
+                        primary_action: function (values) {
+                            d.hide();
+                            frappe.call({
+                                method: "uae_erpgulf.core.simulator.simulate_inbound_invoice",
+                                args: { company: frm.doc.name, scenario: values.scenario },
+                                freeze: true,
+                                freeze_message: __("Simulating Inbound E-Invoice & Generating Draft..."),
+                                callback: function (r) {
+                                    if (r.message) {
+                                        const res = r.message;
+                                        if (res.status === "success") {
+                                            const invoiceLink = res.invoice_name
+                                                ? `<br><br><button class="btn btn-primary btn-sm" onclick="frappe.set_route('Form', 'Purchase Invoice', '${res.invoice_name}')">📄 View Draft Purchase Invoice: <b>${res.invoice_name}</b></button>`
+                                                : "";
+                                            frappe.msgprint({
+                                                title: __("Simulation Completed"),
+                                                message: `<b>${res.message}</b>${invoiceLink}`,
+                                                indicator: "green",
+                                                wide: true
+                                            });
+                                        } else {
+                                            frappe.msgprint({
+                                                title: __("Simulation Alert"),
+                                                message: res.message || __("Simulation finished."),
+                                                indicator: "orange"
+                                            });
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    d.show();
+                },
+                __("UAE E-Invoice")
+            );
+        }
+    }
 });
+
+function show_readiness_modal(data) {
+    const s = data.score_summary || {};
+    const isReady = data.overall_status === "READY";
+    const statusColor = isReady ? "#28a745" : "#e03e2d";
+
+    const badge = (status) => {
+        if (status === "PASS") return '<span style="color:#28a745;font-weight:700;">✔ PASS</span>';
+        if (status === "WARN") return '<span style="color:#f39c12;font-weight:700;">⚠ WARN</span>';
+        return '<span style="color:#e03e2d;font-weight:700;">✘ FAIL</span>';
+    };
+
+    let tableRows = "";
+    (data.checks || []).forEach(c => {
+        tableRows += `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:8px;font-weight:600;font-size:12px;color:#4a5568;">${c.category}</td>
+                <td style="padding:8px;font-size:13px;font-weight:600;">${c.item}</td>
+                <td style="padding:8px;text-align:center;">${badge(c.status)}</td>
+                <td style="padding:8px;font-size:12px;color:#2d3748;">
+                    ${c.message}
+                    ${c.action ? `<br><small style="color:#718096;"><i>Action: ${c.action}</i></small>` : ""}
+                </td>
+            </tr>
+        `;
+    });
+
+    const html = `
+        <div style="margin-bottom:14px;padding:12px 16px;border-radius:6px;background:${isReady ? '#e6f4ea' : '#fce8e6'};border-left:5px solid ${statusColor};">
+            <h4 style="margin:0 0 4px 0;color:${statusColor};">
+                ${isReady ? "✅ Company is E-Invoicing Ready" : "⚠️ Action Required Before Going Live"}
+            </h4>
+            <div style="font-size:13px;color:#333;">
+                Passed: <b>${s.pass || 0}</b> &nbsp;|&nbsp; Warnings: <b>${s.warn || 0}</b> &nbsp;|&nbsp; Failures: <b style="color:#e03e2d;">${s.fail || 0}</b>
+            </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+            <thead style="background:#f7fafc;border-bottom:2px solid #cbd5e0;">
+                <tr>
+                    <th style="padding:8px;text-align:left;font-size:12px;color:#718096;">Category</th>
+                    <th style="padding:8px;text-align:left;font-size:12px;color:#718096;">Compliance Check</th>
+                    <th style="padding:8px;text-align:center;font-size:12px;color:#718096;">Status</th>
+                    <th style="padding:8px;text-align:left;font-size:12px;color:#718096;">Details & Remediation</th>
+                </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+        </table>
+    `;
+
+    frappe.msgprint({
+        title: __("UAE E-Invoicing Pre-Flight Readiness Audit"),
+        message: html,
+        indicator: isReady ? "green" : "red",
+        wide: true
+    });
+}

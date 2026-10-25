@@ -1,0 +1,505 @@
+{% set company = frappe.get_doc("Company", doc.company) if frappe is defined and frappe.get_doc is defined else {} %}
+{% set customer = frappe.get_doc("Customer", doc.customer) if frappe is defined and frappe.get_doc is defined else {} %}
+{% set is_simplified = not (customer.tax_id or doc.tax_id) %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  .uae-einvoice-wrapper {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    line-height: 1.45;
+    font-size: 11px;
+    background: #ffffff;
+    padding: 0;
+  }
+
+  .ar-text {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    direction: rtl;
+    text-align: right;
+  }
+
+  .bilingual-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+  }
+
+  .title-block {
+    flex: 1;
+  }
+
+  .title-en {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .title-ar {
+    font-size: 18px;
+    font-weight: 700;
+    color: #334155;
+    margin: 2px 0 0 0;
+  }
+
+  .meta-badge-row {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-cleared {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+  }
+
+  .badge-reported {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #7dd3fc;
+  }
+
+  .badge-draft {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+  }
+
+
+  /* Entity Grid (Seller / Buyer) */
+  .parties-grid {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .party-card {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+
+  .party-card-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    font-weight: 700;
+    font-size: 11px;
+    color: #0f172a;
+  }
+
+  .party-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+    font-size: 10.5px;
+  }
+
+  .party-label {
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .party-value {
+    color: #0f172a;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  /* Invoice Key Details Bar */
+  .details-strip {
+    display: flex;
+    justify-content: space-between;
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+
+  .detail-col {
+    text-align: center;
+    flex: 1;
+    border-right: 1px solid #334155;
+  }
+
+  .detail-col:last-child {
+    border-right: none;
+  }
+
+  .detail-label {
+    font-size: 8.5px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: block;
+  }
+
+  .detail-val {
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 1px;
+    display: block;
+  }
+
+  /* Items Table */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 10.5px;
+  }
+
+  .items-table th {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    padding: 7px 6px;
+    font-weight: 700;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .items-table td {
+    border: 1px solid #e2e8f0;
+    padding: 7px 6px;
+    vertical-align: top;
+  }
+
+  .items-table tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  .col-center { text-align: center; }
+  .col-right { text-align: right; }
+
+  /* Summary Section */
+  .summary-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+  }
+
+  .summary-table {
+    width: 340px;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .summary-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .summary-label {
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .summary-amount {
+    text-align: right;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .grand-total-row td {
+    background-color: #0f172a;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 8px 10px;
+    border: none;
+  }
+
+  .grand-total-row .summary-amount {
+    color: #38bdf8;
+  }
+
+  /* Footer & Legal */
+  .footer-block {
+    border-top: 1px solid #cbd5e1;
+    padding-top: 10px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5px;
+    color: #64748b;
+  }
+
+  @media print {
+    .uae-einvoice-wrapper {
+      padding: 0;
+    }
+    .badge {
+      border: 1px solid #000000;
+    }
+  }
+</style>
+
+<div class="uae-einvoice-wrapper">
+
+  <!-- ==================== HEADER ==================== -->
+  <div class="bilingual-header">
+    <div class="title-block">
+      {% if is_simplified %}
+        <h1 class="title-en">Simplified Tax Invoice</h1>
+        <h2 class="title-ar">فاتورة ضريبية مبسطة</h2>
+      {% else %}
+        <h1 class="title-en">Tax Invoice</h1>
+        <h2 class="title-ar">فاتورة ضريبية</h2>
+      {% endif %}
+
+      <div class="meta-badge-row">
+        {# UAE e-invoices carry no QR code (MoF guidelines 5.3); show the FTA reporting state instead #}
+        {% set einv_status = doc.custom_uae_einvoice_status or "DRAFT" %}
+        {% if doc.custom_reporting_status == "reported" %}
+          <span class="badge badge-reported">&#10003; FTA Reported / مبلغ عنه</span>
+        {% else %}
+          <span class="badge badge-draft">&#9679; {{ einv_status }}</span>
+        {% endif %}
+
+        {% if doc.custom_document_id %}
+          <span style="font-size: 9px; color: #475569; font-family: monospace;">
+            UUID: {{ doc.custom_document_id }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== DETAILS STRIP ==================== -->
+  <div class="details-strip">
+    <div class="detail-col">
+      <span class="detail-label">Invoice No / رقم الفاتورة</span>
+      <span class="detail-val">{{ doc.name }}</span>
+    </div>
+    <div class="detail-col">
+      <span class="detail-label">Issue Date / تاريخ الإصدار</span>
+      <span class="detail-val">{{ doc.posting_date }}</span>
+    </div>
+    <div class="detail-col">
+      <span class="detail-label">Supply Date / تاريخ التوريد</span>
+      <span class="detail-val">{{ doc.posting_date }}</span>
+    </div>
+    {% if doc.po_no %}
+    <div class="detail-col">
+      <span class="detail-label">PO Ref / مرجع الشراء</span>
+      <span class="detail-val">{{ doc.po_no }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-col">
+      <span class="detail-label">Due Date / الاستحقاق</span>
+      <span class="detail-val">{{ doc.due_date or doc.posting_date }}</span>
+    </div>
+  </div>
+
+  <!-- ==================== PARTIES (SELLER & BUYER) ==================== -->
+  <div class="parties-grid">
+    <!-- Seller Info -->
+    <div class="party-card">
+      <div class="party-card-header">
+        <span>SELLER / المورد</span>
+        <span class="ar-text">{{ company.company_name_in_arabic or '' }}</span>
+      </div>
+      <div class="party-row">
+        <span class="party-label">Name / الاسم:</span>
+        <span class="party-value">{{ company.company_name or doc.company }}</span>
+      </div>
+      <div class="party-row">
+        <span class="party-label">TRN / الرقم الضريبي:</span>
+        <span class="party-value" style="font-family: monospace; letter-spacing: 0.05em; color: #0284c7;">
+          {{ company.tax_id or 'N/A' }}
+        </span>
+      </div>
+      {% if company.custom_trade_license_number %}
+      <div class="party-row">
+        <span class="party-label">Trade License / الرخصة:</span>
+        <span class="party-value">{{ company.custom_trade_license_number }}</span>
+      </div>
+      {% endif %}
+      {% if company.custom_emirates %}
+      <div class="party-row">
+        <span class="party-label">Emirate / الإمارة:</span>
+        <span class="party-value">{{ company.custom_emirates }}</span>
+      </div>
+      {% endif %}
+      {% if doc.company_address_display %}
+      <div class="party-row" style="margin-top: 4px;">
+        <span class="party-label">Address / العنوان:</span>
+        <span class="party-value" style="font-size: 9.5px; font-weight: 500;">
+          {{ doc.company_address_display | replace('<br>', ', ') | striptags }}
+        </span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Buyer Info -->
+    <div class="party-card">
+      <div class="party-card-header">
+        <span>BUYER / العميل</span>
+        <span class="ar-text">{{ doc.customer_name_in_arabic or '' }}</span>
+      </div>
+      <div class="party-row">
+        <span class="party-label">Name / الاسم:</span>
+        <span class="party-value">{{ doc.customer_name or doc.customer }}</span>
+      </div>
+      <div class="party-row">
+        <span class="party-label">TRN / الرقم الضريبي:</span>
+        <span class="party-value" style="font-family: monospace; letter-spacing: 0.05em;">
+          {{ customer.tax_id or doc.tax_id or 'Unregistered / غير مسجل' }}
+        </span>
+      </div>
+      {% if customer.custom_emirates %}
+      <div class="party-row">
+        <span class="party-label">Emirate / الإمارة:</span>
+        <span class="party-value">{{ customer.custom_emirates }}</span>
+      </div>
+      {% endif %}
+      {% if doc.address_display %}
+      <div class="party-row" style="margin-top: 4px;">
+        <span class="party-label">Address / العنوان:</span>
+        <span class="party-value" style="font-size: 9.5px; font-weight: 500;">
+          {{ doc.address_display | replace('<br>', ', ') | striptags }}
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ==================== LINE ITEMS TABLE ==================== -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width: 25px;" class="col-center">#</th>
+        <th>Item & Description<br><span class="ar-text">السلعة والوصف</span></th>
+        <th style="width: 50px;" class="col-center">Qty<br><span class="ar-text">الكمية</span></th>
+        <th style="width: 70px;" class="col-right">Price<br><span class="ar-text">السعر</span></th>
+        <th style="width: 55px;" class="col-right">Disc<br><span class="ar-text">الخصم</span></th>
+        <th style="width: 75px;" class="col-right">Taxable<br><span class="ar-text">الخاضع</span></th>
+        <th style="width: 45px;" class="col-center">VAT%<br><span class="ar-text">النسبة</span></th>
+        <th style="width: 65px;" class="col-right">VAT<br><span class="ar-text">الضريبة</span></th>
+        <th style="width: 80px;" class="col-right">Total<br><span class="ar-text">المجموع</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in doc.items %}
+      {% set item_taxable = item.net_amount or (item.amount - (item.discount_amount or 0.0)) or item.amount %}
+      {% set item_vat = (item_taxable * 0.05) | round(2) %}
+      {% set item_total = item_taxable + item_vat %}
+      <tr>
+        <td class="col-center">{{ loop.index }}</td>
+        <td>
+          <div style="font-weight: 700; color: #0f172a;">{{ item.item_code }}</div>
+          {% if item.item_name and item.item_name != item.item_code %}
+            <div style="color: #475569; font-size: 9.5px;">{{ item.item_name }}</div>
+          {% endif %}
+          {% if item.description and item.description != item.item_name %}
+            <div style="color: #64748b; font-size: 8.5px; margin-top: 2px;">{{ item.description | striptags }}</div>
+          {% endif %}
+        </td>
+        <td class="col-center">{{ item.qty }} <span style="font-size: 8.5px; color: #64748b;">{{ item.uom or '' }}</span></td>
+        <td class="col-right">{{ item.get_formatted("rate") if item.get_formatted is defined else item.rate }}</td>
+        <td class="col-right">{{ item.get_formatted("discount_amount") if item.get_formatted is defined and item.discount_amount else (item.discount_amount or '0.00') }}</td>
+        <td class="col-right">{{ "%.2f"|format(item_taxable) }}</td>
+        <td class="col-center">5%</td>
+        <td class="col-right">{{ "%.2f"|format(item_vat) }}</td>
+        <td class="col-right" style="font-weight: 700;">{{ "%.2f"|format(item_total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- ==================== TOTALS & SUMMARY ==================== -->
+  <div class="summary-wrapper">
+    <table class="summary-table">
+      <tr>
+        <td class="summary-label">
+          Total Taxable Amount (Excl. VAT)<br>
+          <span class="ar-text" style="font-size: 9.5px;">الإجمالي الخاضع للضريبة (غير شامل الضريبة)</span>
+        </td>
+        <td class="summary-amount">
+          {{ doc.currency or 'AED' }} {{ doc.get_formatted("net_total") if doc.get_formatted is defined and doc.net_total else ("%.2f"|format(doc.total or 0.0)) }}
+        </td>
+      </tr>
+      {% if doc.discount_amount %}
+      <tr>
+        <td class="summary-label">
+          Total Discount<br>
+          <span class="ar-text" style="font-size: 9.5px;">إجمالي الخصم</span>
+        </td>
+        <td class="summary-amount" style="color: #dc2626;">
+          - {{ doc.currency or 'AED' }} {{ doc.get_formatted("discount_amount") if doc.get_formatted is defined else ("%.2f"|format(doc.discount_amount)) }}
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td class="summary-label">
+          Total VAT (5%)<br>
+          <span class="ar-text" style="font-size: 9.5px;">إجمالي ضريبة القيمة المضافة (5%)</span>
+        </td>
+        <td class="summary-amount">
+          {{ doc.currency or 'AED' }} {{ doc.get_formatted("total_taxes_and_charges") if doc.get_formatted is defined else ("%.2f"|format(doc.total_taxes_and_charges or 0.0)) }}
+        </td>
+      </tr>
+      <tr class="grand-total-row">
+        <td>
+          TOTAL AMOUNT DUE (INCL. VAT)<br>
+          <span class="ar-text" style="font-size: 11px; font-weight: 700;">المبلغ الإجمالي المستحق (شامل الضريبة)</span>
+        </td>
+        <td class="summary-amount">
+          {{ doc.currency or 'AED' }} {{ doc.get_formatted("grand_total") if doc.get_formatted is defined else ("%.2f"|format(doc.grand_total or doc.base_grand_total or 0.0)) }}
+        </td>
+      </tr>
+      {% if doc.in_words %}
+      <tr>
+        <td colspan="2" style="font-size: 9px; color: #475569; padding-top: 6px; border: none; text-align: right;">
+          <strong>Amount in Words:</strong> {{ doc.in_words }}
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+
+  <!-- ==================== TERMS & FOOTER ==================== -->
+  {% if doc.terms %}
+  <div style="border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 8px;">
+    <div style="font-weight: 700; color: #0f172a; font-size: 10px;">Terms and Conditions / الشروط والأحكام:</div>
+    <div style="color: #475569; font-size: 9px; margin-top: 2px;">{{ doc.terms | safe }}</div>
+  </div>
+  {% endif %}
+
+  <div class="footer-block">
+    <div>
+      This electronic tax invoice is generated in compliance with UAE Federal Tax Authority (FTA) E-Invoicing Regulations.<br>
+      تم إصدار هذه الفاتورة الضريبية الإلكترونية وفقاً لمتطلبات الهيئة الاتحادية للضرائب في دولة الإمارات العربية المتحدة.
+    </div>
+    <div style="text-align: right;">
+      Generated via ERPGulf E-Invoicing Engine &bull; Page 1 of 1
+    </div>
+  </div>
+
+</div>

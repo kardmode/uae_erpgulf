@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+    xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+    xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+    <cbc:CustomizationID>urn:cen.eu:en16931:2017#conformant#urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:CustomizationID>
+    <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+    <cbc:ID>SIM-SRV-2026-002</cbc:ID>
+    <cbc:IssueDate>2026-10-25</cbc:IssueDate>
+    <cbc:IssueTime>14:30:00</cbc:IssueTime>
+    <cbc:InvoiceTypeCode>388</cbc:InvoiceTypeCode>
+    <cbc:DocumentCurrencyCode>AED</cbc:DocumentCurrencyCode>
+
+    <!-- Supplier (Seller) -->
+    <cac:AccountingSupplierParty>
+        <cac:Party>
+            <cbc:EndpointID schemeID="0235">100234567890003</cbc:EndpointID>
+            <cac:PartyName>
+                <cbc:Name>Al Najm Supplies &amp; Equipment LLC</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+                <cbc:StreetName>Al Quoz Industrial Area 3</cbc:StreetName>
+                <cbc:CityName>Dubai</cbc:CityName>
+                <cac:Country><cbc:IdentificationCode>AE</cbc:IdentificationCode></cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+                <cbc:CompanyID>100234567890003</cbc:CompanyID>
+                <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            </cac:PartyTaxScheme>
+        </cac:Party>
+    </cac:AccountingSupplierParty>
+
+    <!-- Customer (Buyer) -->
+    <cac:AccountingCustomerParty>
+        <cac:Party>
+            <cbc:EndpointID schemeID="0235">100987654321003</cbc:EndpointID>
+            <cac:PartyName>
+                <cbc:Name>Emaar Hospitality FZE</cbc:Name>
+            </cac:PartyName>
+            <cac:PartyTaxScheme>
+                <cbc:CompanyID>100987654321003</cbc:CompanyID>
+                <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            </cac:PartyTaxScheme>
+        </cac:Party>
+    </cac:AccountingCustomerParty>
+
+    <!-- Tax Total -->
+    <cac:TaxTotal>
+        <cbc:TaxAmount currencyID="AED">25.00</cbc:TaxAmount>
+    </cac:TaxTotal>
+
+    <!-- Legal Monetary Total -->
+    <cac:LegalMonetaryTotal>
+        <cbc:LineExtensionAmount currencyID="AED">500.00</cbc:LineExtensionAmount>
+        <cbc:TaxExclusiveAmount currencyID="AED">500.00</cbc:TaxExclusiveAmount>
+        <cbc:TaxInclusiveAmount currencyID="AED">525.00</cbc:TaxInclusiveAmount>
+        <cbc:PayableAmount currencyID="AED">525.00</cbc:PayableAmount>
+    </cac:LegalMonetaryTotal>
+
+    <!-- Invoice Lines -->
+    <cac:InvoiceLine>
+        <cbc:ID>1</cbc:ID>
+        <cbc:InvoicedQuantity unitCode="ZZ">1</cbc:InvoicedQuantity>
+        <cbc:LineExtensionAmount currencyID="AED">500.00</cbc:LineExtensionAmount>
+        <cac:Item>
+            <cbc:Name>Logistics Courier &amp; Handling Charge</cbc:Name>
+            <cac:ClassifiedTaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>5.0</cbc:Percent>
+                <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="AED">500.00</cbc:PriceAmount>
+        </cac:Price>
+    </cac:InvoiceLine>
+</Invoice>

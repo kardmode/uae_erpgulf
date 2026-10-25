@@ -52,8 +52,6 @@ def success_log(
         )
 
         log.insert(ignore_permissions=True)
-        frappe.db.commit()
-
         return log.name
 
     except (
@@ -61,10 +59,10 @@ def success_log(
         TypeError,
         KeyError,
         frappe.ValidationError,
-    ) as e:
+    ):
+        # Only an audit log: never fail (or roll back) the submission that was already accepted
         frappe.log_error(
             title="UAE E-invoicing Success Log Error",
             message=frappe.get_traceback(),
         )
-
-        frappe.throw(_("Error in UAE success log: {0}").format(str(e)))
+        return None

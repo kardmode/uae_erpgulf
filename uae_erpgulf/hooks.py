@@ -86,7 +86,8 @@ app_license = "mit"
 # ------------
 
 # before_install = "uae_erpgulf.install.before_install"
-# after_install = "uae_erpgulf.install.after_install"
+after_install = "uae_erpgulf.setup.custom_fields.setup_custom_fields"
+after_migrate = "uae_erpgulf.setup.custom_fields.setup_custom_fields"
 
 # Uninstallation
 # ------------
@@ -268,28 +269,28 @@ doctype_list_js = {
 }
 doc_events = {
     "Sales Invoice": {
-        "on_submit": "uae_erpgulf.uae_erpgulf.test.generate_and_send_einvoice",
-        "before_submit": "uae_erpgulf.uae_erpgulf.validation.validate_accredited_service_provider"
+        "before_submit": "uae_erpgulf.uae_erpgulf.validation.validate_accredited_service_provider",
+        "on_submit": "uae_erpgulf.uae_erpgulf.queue.enqueue_invoice_submission",
+        "before_cancel": "uae_erpgulf.uae_erpgulf.queue.validate_einvoice_cancellation"
     },
     "Purchase Invoice": {
-        "on_submit": "uae_erpgulf.uae_erpgulf.send_purchase.generate_and_send_einvoice",
-        "before_submit": "uae_erpgulf.uae_erpgulf.validation.validate_accredited_service_provider"
+        "before_submit": "uae_erpgulf.uae_erpgulf.validation.validate_accredited_service_provider",
+        "on_submit": "uae_erpgulf.uae_erpgulf.queue.enqueue_invoice_submission",
+        "before_cancel": "uae_erpgulf.uae_erpgulf.queue.validate_einvoice_cancellation"
     }
 }
-fixtures = [
-    {
-        "dt": "Custom Field",
-        "filters": [
-            ["module", "=", "uae_erpgulf"]
-        ]
-    }
-]
 scheduler_events = {
+    "hourly": [
+        "uae_erpgulf.uae_erpgulf.webhook.update_webhook_logs"
+    ],
     "cron": {
-         "* * * * *": [
-            "uae_erpgulf.uae_erpgulf.webhook.update_webhook_logs"
+        # Picks up transient ASP failures once their backoff has elapsed
+        "*/2 * * * *": [
+            "uae_erpgulf.uae_erpgulf.queue.retry_pending_submissions"
+        ],
+        # Follows accepted invoices until the provider confirms FTA reporting (or rejection)
+        "*/5 * * * *": [
+            "uae_erpgulf.uae_erpgulf.queue.poll_pending_reporting"
         ]
     }
 }
-
-import uae_erpgulf.overrides.return_validation

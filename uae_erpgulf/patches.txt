@@ -4,3 +4,7 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+uae_erpgulf.patches.v2_0.migrate_einvoice_fields
+uae_erpgulf.patches.v2_0.encrypt_company_secrets
+uae_erpgulf.patches.v2_0.clear_stale_flick_base_url
+uae_erpgulf.patches.v2_0.normalize_reporting_status

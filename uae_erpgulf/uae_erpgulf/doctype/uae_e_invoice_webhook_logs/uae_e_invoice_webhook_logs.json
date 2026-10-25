@@ -5,6 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "event_id",
   "document_id",
   "participant_id",
   "event_type",
@@ -17,6 +18,14 @@
   "webhook_response"
  ],
  "fields": [
+  {
+   "fieldname": "event_id",
+   "fieldtype": "Data",
+   "label": "Event ID",
+   "read_only": 1,
+   "unique": 1,
+   "description": "Provider event ID, used to ignore redelivered events."
+  },
   {
    "fieldname": "document_id",
    "fieldtype": "Data",
@@ -87,7 +96,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-09 16:48:30.526613",
+ "modified": "2026-10-26 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "uae_erpgulf",
  "name": "UAE E-Invoice Webhook Logs",

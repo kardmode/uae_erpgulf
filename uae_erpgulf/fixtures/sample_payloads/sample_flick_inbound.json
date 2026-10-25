@@ -1,0 +1,45 @@
+{
+  "event": "invoice.received",
+  "participant_id": "0235:100987654321003",
+  "data": {
+    "id": "flick-inbound-doc-8819",
+    "document_identifier": "SIM-FLK-2026-004",
+    "invoice_type_code": "388",
+    "issue_date": "2026-10-25",
+    "issue_time": "16:00:00",
+    "document_currency": "AED",
+    "order_reference": "PO-2026-DEMO-01",
+    "issuing_party": {
+      "legal_name": "Al Najm Supplies & Equipment LLC",
+      "vat_number": "100234567890003",
+      "legal_identifier": "TL-776655",
+      "city_address": "Dubai",
+      "country_code": "AE"
+    },
+    "receiving_party": {
+      "legal_name": "Emaar Hospitality FZE",
+      "vat_number": "100987654321003",
+      "city_address": "Dubai",
+      "country_code": "AE"
+    },
+    "invoice_lines": [
+      {
+        "id": "1",
+        "name": "Heavy Duty Steel Bolts",
+        "commodity_code": "DEMO-STK-01",
+        "invoiced_quantity": "5",
+        "uom": "NOS",
+        "unit_price": "100.00",
+        "line_extension_amount": "500.00",
+        "vat_percentage": 5.0
+      }
+    ],
+    "legal_monetary_total": {
+      "line_extension_amount": "500.00",
+      "tax_exclusive_amount": "500.00",
+      "tax_inclusive_amount": "525.00",
+      "payable_amount": "525.00",
+      "charge_total_amount": "25.00"
+    }
+  }
+}
